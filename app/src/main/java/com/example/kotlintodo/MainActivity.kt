@@ -11,11 +11,10 @@ import kotlinx.android.synthetic.main.content_main.*
 import android.content.ContentValues
 
 
-
 class MainActivity : AppCompatActivity(){
 
     private val notesList = mutableListOf<Note>()
-    private var listAdapter: ArrayAdapter<Note>? = null
+    private var listAdapter: NoteAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,7 +22,7 @@ class MainActivity : AppCompatActivity(){
         setSupportActionBar(toolbar)
 
         val mainList = list_view
-        listAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, notesList)
+        listAdapter = NoteAdapter(this, notesList)
         mainList.adapter = listAdapter
 
         mainList.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
@@ -60,7 +59,7 @@ class MainActivity : AppCompatActivity(){
     private fun showNewNoteDialog() {
         val dialogBuilder = AlertDialog.Builder(this)
         val inflater = this.layoutInflater
-        val dialogView = inflater.inflate(R.layout.custom_dialog, null)
+        val dialogView = inflater.inflate(R.layout.note_dialog, null)
         dialogBuilder.setView(dialogView)
 
         val noteTitle = dialogView.findViewById<EditText>(R.id.title)
@@ -97,7 +96,7 @@ class MainActivity : AppCompatActivity(){
     private fun showEditNoteDialog(note: Note) {
         val dialogBuilder = AlertDialog.Builder(this)
         val inflater = this.layoutInflater
-        val dialogView = inflater.inflate(R.layout.custom_dialog, null)
+        val dialogView = inflater.inflate(R.layout.note_dialog, null)
         dialogBuilder.setView(dialogView)
 
         val noteTitle = dialogView.findViewById<EditText>(R.id.title)

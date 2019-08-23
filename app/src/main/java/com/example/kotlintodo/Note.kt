@@ -31,6 +31,6 @@ class Note {
     }
 
     override fun toString(): String {
-        return "$title"
+        return "$title\n$content"
     }
 }
