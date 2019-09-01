@@ -4,7 +4,7 @@
 
     <string name="add_new_task_dialog_title">New Task</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="title_activity_main2">Main2Activity</string>
+    <string name="NoteTitle">Title</string>
+    <string name="NoteContent">Content</string>
+    <string name="title_activity_note">Note</string>
 </resources>

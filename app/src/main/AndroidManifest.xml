@@ -10,8 +10,8 @@
             android:supportsRtl="true"
             android:theme="@style/AppTheme">
         <activity
-                android:name=".Main2Activity"
-                android:label="@string/title_activity_main2"
+                android:name=".NoteActivity"
+                android:label="@string/title_activity_note"
                 android:theme="@style/AppTheme.NoActionBar">
         </activity>
         <activity

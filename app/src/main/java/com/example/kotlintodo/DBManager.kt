@@ -17,7 +17,7 @@ class NoteDbManager(context: Context) {
     private val dbVersion = 1
 
     private val CREATE_TABLE_SQL =
-        "CREATE TABLE IF NOT EXISTS $dbTable ($colId INTEGER PRIMARY KEY,$colTitle TEXT, $colContent TEXT);"
+        "CREATE TABLE IF NOT EXISTS $dbTable ($colId INTEGER PRIMARY KEY, $colTitle TEXT, $colContent TEXT);"
     private var db: SQLiteDatabase? = null
 
     init {

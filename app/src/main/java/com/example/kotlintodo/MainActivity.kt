@@ -1,7 +1,8 @@
 package com.example.kotlintodo
 
+import android.app.Activity
 import  android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
 import kotlinx.android.synthetic.main.activity_main.*
@@ -9,12 +10,15 @@ import android.app.AlertDialog
 import android.widget.*
 import kotlinx.android.synthetic.main.content_main.*
 import android.content.ContentValues
-
+import android.content.Intent
 
 class MainActivity : AppCompatActivity(){
 
+    private val NEW_NOTE_CODE = 1
+    private val EDIT_NOTE_CODE = 2
     private val notesList = mutableListOf<Note>()
     private var listAdapter: NoteAdapter? = null
+    private var currentNote: Note? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,12 +30,40 @@ class MainActivity : AppCompatActivity(){
         mainList.adapter = listAdapter
 
         mainList.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
-            showEditNoteDialog(notesList[position])
+            currentNote = notesList[position]
+            val intent = Intent(this, NoteActivity::class.java)
+            intent.putExtra("Note", notesList[position])
+
+            startActivityForResult(intent, EDIT_NOTE_CODE)
         }
         fab.setOnClickListener {
-            showNewNoteDialog()
+              quickNoteDialog()
         }
+
         loadQueryAll()
+    }
+
+    override
+    fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        // Check which request we're responding to
+        if (requestCode == EDIT_NOTE_CODE) {
+            if (resultCode == Activity.RESULT_OK && currentNote != null ){
+
+                when (data?.getStringExtra("Action")) {
+                     "Save" -> {
+                         val note = data.getParcelableExtra<Note>("Note")!!
+                         editNoteOnDatabaseAndList(currentNote!!, note)
+                         currentNote = null
+                    }
+                    "Delete" -> {
+                        deleteNoteFromDatabaseAndList(currentNote!!)
+                        currentNote = null
+                    }
+                }
+            }
+        }
     }
 
 
@@ -42,9 +74,6 @@ class MainActivity : AppCompatActivity(){
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
             R.id.action_settings -> true
             else -> super.onOptionsItemSelected(item)
@@ -56,7 +85,7 @@ class MainActivity : AppCompatActivity(){
         loadQueryAll()
     }
 
-    private fun showNewNoteDialog() {
+    private fun quickNoteDialog() {
         val dialogBuilder = AlertDialog.Builder(this)
         val inflater = this.layoutInflater
         val dialogView = inflater.inflate(R.layout.note_dialog, null)
@@ -68,20 +97,9 @@ class MainActivity : AppCompatActivity(){
         dialogBuilder.setTitle("New Task")
         dialogBuilder.setPositiveButton("Save") { _, _ ->
 
-            notesList.add(Note(noteTitle.text.toString(), noteContent.text.toString()))
+            val note = Note(noteTitle.text.toString(), noteContent.text.toString())
+            addNoteToDatabaseAndList(note)
 
-            val dbManager = NoteDbManager(this)
-
-            val values = ContentValues()
-            values.put("Title", noteTitle.text.toString())
-            values.put("Content", noteContent.text.toString())
-            val mID = dbManager.insert(values)
-
-            if (mID > 0) {
-                Toast.makeText(this, "Note created successfully!", Toast.LENGTH_LONG).show()
-            } else {
-                Toast.makeText(this, "Failed to add note!", Toast.LENGTH_LONG).show()
-            }
         }
 
         dialogBuilder.setNegativeButton("Cancel") { _, _ ->
@@ -91,61 +109,62 @@ class MainActivity : AppCompatActivity(){
         b.show()
     }
 
+    // ----------------------------------------------------------------
+    // ------------------ DATABASE METHODS ----------------------------
+    // ----------------------------------------------------------------
 
+    private fun addNoteToDatabaseAndList(note: Note){
+        // Update note in database
 
-    private fun showEditNoteDialog(note: Note) {
-        val dialogBuilder = AlertDialog.Builder(this)
-        val inflater = this.layoutInflater
-        val dialogView = inflater.inflate(R.layout.note_dialog, null)
-        dialogBuilder.setView(dialogView)
+        val dbManager = NoteDbManager(this)
+        val values = ContentValues()
+        values.put("Title", note.title)
+        values.put("Content", note.content)
 
-        val noteTitle = dialogView.findViewById<EditText>(R.id.title)
-        val noteContent = dialogView.findViewById<EditText>(R.id.content)
+        val mID = dbManager.insert(values)
 
-        // Set default values of title and content to the actual ones.
-        noteTitle.setText(note.title, TextView.BufferType.EDITABLE)
-        noteContent.setText(note.content, TextView.BufferType.EDITABLE)
-
-        dialogBuilder.setTitle("Update Task")
-        dialogBuilder.setPositiveButton("Save") { _, _ ->
-
-            // Update title and content with its fields.
-            note.title = noteTitle.text.toString()
-            note.content = noteContent.text.toString()
-
-            // Update note in database
-            val dbManager = NoteDbManager(this)
-            val values = ContentValues()
-            values.put("Title", noteTitle.text.toString())
-            values.put("Content", noteContent.text.toString())
-
-            val mID = dbManager.update(values, "ID=?", arrayOf(note.id.toString()))
-
-            if (mID > 0) {
-                Toast.makeText(this, "Note updated successfully!", Toast.LENGTH_LONG).show()
-            } else {
-                Toast.makeText(this, "Failed to edit note!", Toast.LENGTH_LONG).show()
-            }
+        if (mID > 0) {
+            notesList.add(note)
+            listAdapter?.notifyDataSetChanged()
+            Toast.makeText(this, "Note created successfully!", Toast.LENGTH_LONG).show()
+        } else {
+            Toast.makeText(this, "Failed to add note!", Toast.LENGTH_LONG).show()
         }
+    }
 
-        dialogBuilder.setNegativeButton("Delete") { _, _ ->
+    private fun deleteNoteFromDatabaseAndList(note: Note) {
 
-            val dbManager = NoteDbManager(this)
+        val dbManager = NoteDbManager(this)
 
-            val mID = dbManager.delete("ID=?", arrayOf(note.id.toString()))
+        val mID = dbManager.delete("ID=?", arrayOf(note.id.toString()))
 
-            if (mID > 0) {
-                notesList.remove(note)
-                listAdapter?.notifyDataSetChanged()
-                Toast.makeText(this, "Note deleted successfully!", Toast.LENGTH_LONG).show()
-            } else {
-                Toast.makeText(this, "Failed to delete note!", Toast.LENGTH_LONG).show()
-            }
-
+        if (mID > 0) {
+            notesList.remove(note)
+            listAdapter?.notifyDataSetChanged()
+            Toast.makeText(this, "Note deleted successfully!", Toast.LENGTH_LONG).show()
+        } else {
+            Toast.makeText(this, "Failed to delete note!", Toast.LENGTH_LONG).show()
         }
+    }
 
-        val b = dialogBuilder.create()
-        b.show()
+    private fun editNoteOnDatabaseAndList(old: Note, new: Note){
+
+        assert(old.id == new.id)
+
+        // Update note in database
+        val dbManager = NoteDbManager(this)
+        val values = ContentValues()
+        values.put("Title", new.title)
+        values.put("Content", new.content)
+
+        val mID = dbManager.update(values, "ID=?", arrayOf(old.id.toString()))
+        if (mID > 0) {
+            notesList[notesList.indexOf(old)] = new
+            listAdapter?.notifyDataSetChanged()
+            Toast.makeText(this, "Note updated successfully!", Toast.LENGTH_LONG).show()
+        } else {
+            Toast.makeText(this, "Failed to edit note!", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun loadQueryAll() {
