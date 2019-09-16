@@ -1,7 +1,7 @@
 package com.example.kotlintodo
 
 import android.app.Activity
-import  android.os.Bundle
+import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
@@ -11,6 +11,7 @@ import android.widget.*
 import kotlinx.android.synthetic.main.content_main.*
 import android.content.ContentValues
 import android.content.Intent
+import android.view.View
 
 class MainActivity : AppCompatActivity(){
 
@@ -20,7 +21,8 @@ class MainActivity : AppCompatActivity(){
     private var listAdapter: NoteAdapter? = null
     private var currentNote: Note? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override
+    fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
@@ -32,12 +34,19 @@ class MainActivity : AppCompatActivity(){
         mainList.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
             currentNote = notesList[position]
             val intent = Intent(this, NoteActivity::class.java)
-            intent.putExtra("Note", notesList[position])
-
+            intent.putExtra("Note", currentNote)
             startActivityForResult(intent, EDIT_NOTE_CODE)
         }
         fab.setOnClickListener {
               quickNoteDialog()
+        }
+
+        this.new_note_button.setOnClickListener {
+            currentNote = Note("", "")
+
+            val intent = Intent(this, NoteActivity::class.java)
+            intent.putExtra("Note", currentNote)
+            startActivityForResult(intent, EDIT_NOTE_CODE)
         }
 
         loadQueryAll()
@@ -54,7 +63,13 @@ class MainActivity : AppCompatActivity(){
                 when (data?.getStringExtra("Action")) {
                      "Save" -> {
                          val note = data.getParcelableExtra<Note>("Note")!!
-                         editNoteOnDatabaseAndList(currentNote!!, note)
+
+                         if (notesList.find { it.id == currentNote!!.id } != null) {
+                             editNoteOnDatabaseAndList(currentNote!!, note)
+                         } else {
+                             addNoteToDatabaseAndList(note)
+                         }
+
                          currentNote = null
                     }
                     "Delete" -> {
@@ -76,6 +91,13 @@ class MainActivity : AppCompatActivity(){
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_settings -> true
+            R.id.action_clear_list -> {
+                notesList.clear()
+                val dbManager = NoteDbManager(this)
+                dbManager.deleteAll()
+                listAdapter?.notifyDataSetChanged()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -85,10 +107,13 @@ class MainActivity : AppCompatActivity(){
         loadQueryAll()
     }
 
+    // ----------------------------------------------------------------
+    // --------------------------- DIALOGS ----------------------------
+    // ----------------------------------------------------------------
+
     private fun quickNoteDialog() {
         val dialogBuilder = AlertDialog.Builder(this)
-        val inflater = this.layoutInflater
-        val dialogView = inflater.inflate(R.layout.note_dialog, null)
+        val dialogView = View.inflate(this, R.layout.note_dialog, null)
         dialogBuilder.setView(dialogView)
 
         val noteTitle = dialogView.findViewById<EditText>(R.id.title)

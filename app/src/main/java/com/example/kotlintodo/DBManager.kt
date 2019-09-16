@@ -41,6 +41,10 @@ class NoteDbManager(context: Context) {
         return db!!.delete(dbTable, selection, selectionArgs)
     }
 
+    fun deleteAll(): Int {
+        return db!!.delete(dbTable, null, null)
+    }
+
     fun update(values: ContentValues, selection: String, selectionargs: Array<String>): Int {
 
         return db!!.update(dbTable, values, selection, selectionargs)
