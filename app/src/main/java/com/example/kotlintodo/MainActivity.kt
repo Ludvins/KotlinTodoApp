@@ -13,10 +13,10 @@ import android.content.ContentValues
 import android.content.Intent
 import android.view.View
 
-class MainActivity : AppCompatActivity(){
+private const val EDIT_NOTE_CODE = 2
 
-    private val NEW_NOTE_CODE = 1
-    private val EDIT_NOTE_CODE = 2
+class MainActivity : AppCompatActivity() {
+
     private val notesList = mutableListOf<Note>()
     private var listAdapter: NoteAdapter? = null
     private var currentNote: Note? = null
@@ -38,7 +38,7 @@ class MainActivity : AppCompatActivity(){
             startActivityForResult(intent, EDIT_NOTE_CODE)
         }
         fab.setOnClickListener {
-              quickNoteDialog()
+            quickNoteDialog()
         }
 
         this.new_note_button.setOnClickListener {
@@ -57,26 +57,23 @@ class MainActivity : AppCompatActivity(){
         super.onActivityResult(requestCode, resultCode, data)
 
         // Check which request we're responding to
-        if (requestCode == EDIT_NOTE_CODE) {
-            if (resultCode == Activity.RESULT_OK && currentNote != null ){
-
+        if (requestCode == EDIT_NOTE_CODE && resultCode == Activity.RESULT_OK) {
+            currentNote?.run {
                 when (data?.getStringExtra("Action")) {
-                     "Save" -> {
-                         val note = data.getParcelableExtra<Note>("Note")!!
+                    "Save" -> {
+                        val note = data.getParcelableExtra<Note>("Note")!!
 
-                         if (notesList.find { it.id == currentNote!!.id } != null) {
-                             editNoteOnDatabaseAndList(currentNote!!, note)
-                         } else {
-                             addNoteToDatabaseAndList(note)
-                         }
-
-                         currentNote = null
+                        if (notesList.find { n -> n.id == this.id } != null) {
+                            editNoteOnDatabaseAndList(this, note)
+                        } else {
+                            addNoteToDatabaseAndList(note)
+                        }
                     }
                     "Delete" -> {
-                        deleteNoteFromDatabaseAndList(currentNote!!)
-                        currentNote = null
+                        deleteNoteFromDatabaseAndList(this)
                     }
                 }
+                currentNote = null
             }
         }
     }
@@ -138,7 +135,7 @@ class MainActivity : AppCompatActivity(){
     // ------------------ DATABASE METHODS ----------------------------
     // ----------------------------------------------------------------
 
-    private fun addNoteToDatabaseAndList(note: Note){
+    private fun addNoteToDatabaseAndList(note: Note) {
         // Update note in database
 
         val dbManager = NoteDbManager(this)
@@ -172,7 +169,7 @@ class MainActivity : AppCompatActivity(){
         }
     }
 
-    private fun editNoteOnDatabaseAndList(old: Note, new: Note){
+    private fun editNoteOnDatabaseAndList(old: Note, new: Note) {
 
         assert(old.id == new.id)
 
